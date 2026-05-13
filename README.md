@@ -1,2 +1,4 @@
 # Jundedals-gaming
-fuckass skola banna de flesta hemsidor
+För jundedalare!!!
+
+om du vill ha ett spel, dm'a mig på @bobodc12 i discord :D
