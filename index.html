@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Junedals gaming | Unblocked</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #ffffff;
+            --card-bg: rgba(15, 23, 42, 0.8);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-blue: #00659E;
+            --input-bg: #1e293b;
+        }
+
+        body.light-theme {
+            --bg-color: #f8fafc;
+            --text-color: #ffffff;
+            --card-bg: rgba(0, 101, 158, 0.8);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --input-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+        }
+
+        .game-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--card-bg);
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            border-color: var(--accent-blue);
+        }
+
+        #game-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            background: #000;
+        }
+
+        iframe {
+            width: 100%;
+            height: calc(100% - 60px);
+            border: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="custom-scrollbar">
+
+    <nav class="sticky top-0 z-50 glass px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <a href="/">
+                <img src="https://www.jonkoping.se/images/18.12ea8e7716736a14f7a2026/1543307654797/logo-jkpg-vit-300px.png" alt="Logo" class="h-10 w-auto">
+            </a>
+            <h1 class="text-2xl font-800 tracking-tighter">
+                Junedals gaming
+            </h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="relative hidden md:block">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="search" placeholder="Search games..." 
+                    class="border border-slate-700 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#00659E] w-64 transition-all"
+                    style="background-color: var(--input-bg); color: var(--text-color);">
+            </div>
+            <button onclick="toggleTheme()" class="p-2 hover:bg-slate-500/20 rounded-full transition-colors">
+                <i id="theme-icon" class="fas fa-moon"></i>
+            </button>
+            <button class="p-2 hover:bg-slate-500/20 rounded-full transition-colors"><i class="fas fa-cog"></i></button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-6 py-8">
+        <div class="mb-12 p-8 rounded-3xl bg-[#00659E] relative overflow-hidden">
+            <div class="relative z-10 max-w-2xl text-white">
+                <h2 class="text-4xl md:text-5xl font-extrabold mb-4">Junedals gaming: Den obonkerade hemsidan</h2>
+                <p class="text-blue-100 text-lg mb-6">Ja, jag vet att bilderna är skit. Men vem bryr sig? Spelen är peak</p>
+                <button onclick="document.getElementById('game-grid').scrollIntoView({behavior:'smooth'})" 
+                    class="bg-white text-[#00659E] px-8 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all active:scale-95">
+                    Browse Library
+                </button>
+            </div>
+            <i class="fas fa-rocket absolute -right-10 -bottom-10 text-[200px] text-white/10 -rotate-12"></i>
+        </div>
+
+        <div class="flex gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar">
+            <button class="px-6 py-2 rounded-full bg-[#00659E] text-white font-semibold whitespace-nowrap">All Games</button>
+            <button class="px-6 py-2 rounded-full glass hover:bg-slate-500/20 transition-colors whitespace-nowrap">Action</button>
+            <button class="px-6 py-2 rounded-full glass hover:bg-slate-500/20 transition-colors whitespace-nowrap">Puzzle</button>
+            <button class="px-6 py-2 rounded-full glass hover:bg-slate-500/20 transition-colors whitespace-nowrap">Sports</button>
+        </div>
+
+        <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+    </main>
+
+    <footer class="border-t border-slate-800 mt-20 py-10 text-center text-slate-500">
+        <p>© 2026 Junedals gaming, powered by github pages</p>
+    </footer>
+
+    <div id="game-overlay">
+        <div class="h-[60px] glass flex items-center justify-between px-6 border-b border-white/10">
+            <div class="flex items-center gap-4">
+                <button onclick="closeGame()" class="flex items-center gap-2 hover:text-[#00659E] transition-colors">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="font-semibold uppercase tracking-widest text-sm">Back to Menu</span>
+                </button>
+                <div class="h-6 w-[1px] bg-slate-700"></div>
+                <h3 id="current-game-title" class="font-bold text-[#00659E]">Game Title</h3>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleFullscreen()" class="p-2 hover:bg-slate-500/20 rounded-lg"><i class="fas fa-expand"></i></button>
+                <button onclick="reloadGame()" class="p-2 hover:bg-slate-500/20 rounded-lg"><i class="fas fa-redo"></i></button>
+            </div>
+        </div>
+        <iframe id="game-frame" src="" allowfullscreen></iframe>
+    </div>
+
+    <script>
+        const GAME_CONFIG = [
+            { id: 'slope', name: 'Slope (funkar ej)', folder: 'slope' },
+            { id: 'neon-nexus', name: 'Neon Nexus', folder: 'neon-nexus' },
+            { id: 'lumina', name: 'Lumina', folder: 'lumina' },
+            { id: 'roulette', name: 'Roulette', folder: 'javascript-roulette-main' },
+            { id: 'chess', name: 'Chess (player vs player)', folder: 'chess' }
+        ];
+
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            body.classList.toggle('light-theme');
+            
+            if (body.classList.contains('light-theme')) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+        }
+
+        const gameGrid = document.getElementById('game-grid');
+        const searchInput = document.getElementById('search');
+        const overlay = document.getElementById('game-overlay');
+        const gameFrame = document.getElementById('game-frame');
+        const gameTitle = document.getElementById('current-game-title');
+
+        window.handleImageError = function(img) {
+            const container = img.parentElement;
+            container.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500"><i class="fas fa-image text-5xl"></i></div>`;
+        };
+
+        function renderGames(filter = '') {
+            gameGrid.innerHTML = '';
+            const filtered = GAME_CONFIG.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()));
+
+            filtered.forEach(game => {
+                const logoPath = `game/${game.folder}/logo.png`;
+                const typeTag = game.link ? 'External Link' : 'Unblocked';
+                
+                const card = document.createElement('div');
+                card.className = 'game-card glass rounded-3xl overflow-hidden cursor-pointer group border-2 border-transparent';
+                card.onclick = () => openGame(game);
+                
+                card.innerHTML = `
+                    <div class="aspect-video relative overflow-hidden bg-slate-900">
+                        <img src="${logoPath}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="handleImageError(this)">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div class="w-14 h-14 bg-[#00659E] rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-transform shadow-xl">
+                                <i class="fas fa-play text-white text-xl ml-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="font-bold text-lg truncate">${game.name}</h4>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-xs px-2 py-1 bg-slate-500/20 rounded-md font-medium uppercase tracking-tighter">${typeTag}</span>
+                            <span class="text-xs px-2 py-1 bg-[#00659E]/20 text-[#00659E] rounded-md font-medium uppercase tracking-tighter">Safe</span>
+                        </div>
+                    </div>
+                `;
+                gameGrid.appendChild(card);
+            });
+        }
+
+        function openGame(game) {
+            document.body.style.overflow = 'hidden';
+            overlay.style.display = 'block';
+            gameTitle.innerText = game.name;
+            gameFrame.src = game.link ? game.link : `game/${game.folder}/index.html`;
+        }
+
+        function closeGame() {
+            document.body.style.overflow = 'auto';
+            overlay.style.display = 'none';
+            gameFrame.src = '';
+        }
+
+        function reloadGame() {
+            const currentSrc = gameFrame.src;
+            gameFrame.src = 'about:blank';
+            setTimeout(() => { gameFrame.src = currentSrc; }, 50);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                overlay.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        searchInput.addEventListener('input', (e) => renderGames(e.target.value));
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay.style.display === 'block') closeGame();
+        });
+
+        window.onload = () => renderGames();
+    </script>
+</body>
+</html>

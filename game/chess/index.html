@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chess</title>
+<style>
+  body { margin:0; font-family: Arial, sans-serif; background:#222; color:#eee; display:flex; flex-direction:column; align-items:center; }
+  #board { display:grid; grid-template-columns:repeat(8,60px); grid-template-rows:repeat(8,60px); margin-top:20px; border:2px solid #000; position:relative; }
+  .square { width:60px; height:60px; display:flex; align-items:center; justify-content:center; font-size:40px; cursor:pointer; position:relative; }
+  .white { background:#eee; }
+  .black { background:#666; }
+  .highlight { outline:3px solid yellow; }
+  .move-dot { width:15px; height:15px; background:rgba(0,255,0,0.6); border-radius:50%; position:absolute; }
+  .white-piece { color:#fff; text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+  .black-piece { color:#000; }
+  #info { margin-top:10px; display:flex; gap:10px; }
+  #moves { max-height:150px; overflow-y:auto; background:#333; padding:10px; border-radius:8px; width:480px; margin-top:10px; }
+
+  /* Popup styles */
+  #popup, #promotionPopup {
+    position:absolute;
+    top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.7);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:10;
+    display:none;
+  }
+  #popupContent, #promotionContent {
+    background:#fff;
+    color:#000;
+    padding:20px 30px;
+    border-radius:10px;
+    text-align:center;
+    font-size:20px;
+    box-shadow:0 0 20px #000;
+  }
+  #popup button, #promotionContent button {
+    margin:10px;
+    padding:8px 16px;
+    border:none;
+    border-radius:6px;
+    background:#333;
+    color:#fff;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<h1>Chess</h1>
+<div id="board"></div>
+<div id="popup">
+  <div id="popupContent">
+    <div id="popupMessage"></div>
+    <button onclick="closePopup()">Close</button>
+  </div>
+</div>
+<div id="promotionPopup">
+  <div id="promotionContent">
+    <div>Promote pawn to:</div>
+    <button onclick="promote('Q')">Queen</button>
+    <button onclick="promote('R')">Rook</button>
+    <button onclick="promote('B')">Bishop</button>
+    <button onclick="promote('N')">Knight</button>
+  </div>
+</div>
+<div id="info">
+  <button onclick="newGame()">New Game</button>
+  <button onclick="undo()">Undo</button>
+  <button onclick="flipBoard()">Flip Board</button>
+</div>
+<div id="moves"></div>
+<script>
+const PIECES = {
+  P:'♙',R:'♖',N:'♘',B:'♗',Q:'♕',K:'♔',
+  p:'♟︎',r:'♜',n:'♞',b:'♝',q:'♛',k:'♚'
+};
+let board, turn, history, flipped;
+let enPassant = null; // store column where en passant capture is possible
+let promotionData = null; // store pawn promotion data
+
+function startGame(){
+  board=[
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    Array(8).fill(null),
+    Array(8).fill(null),
+    Array(8).fill(null),
+    Array(8).fill(null),
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R']
+  ];
+  turn='w'; history=[]; flipped=false;
+  enPassant=null; promotionData=null;
+  document.getElementById('moves').innerHTML='';
+  hidePopup();
+  draw();
+}
+
+function newGame(){ startGame(); }
+
+function draw(){
+  const container=document.getElementById('board');
+  container.innerHTML='';
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      let rr=flipped?7-r:r, cc=flipped?7-c:c;
+      const sq=document.createElement('div');
+      sq.className='square '+((r+c)%2?'black':'white');
+      sq.dataset.row=rr; sq.dataset.col=cc;
+      if(board[rr][cc]){
+        const span=document.createElement('span');
+        span.textContent=PIECES[board[rr][cc]];
+        if(board[rr][cc]===board[rr][cc].toUpperCase()) span.className='white-piece';
+        else span.className='black-piece';
+        sq.appendChild(span);
+      }
+      sq.onclick=()=>clickSquare(rr,cc);
+      container.appendChild(sq);
+    }
+  }
+}
+
+let selected=null;
+let currentMoves=[];
+
+function clickSquare(r,c){
+  if(selected){
+    if(currentMoves.some(m=>m[0]===r && m[1]===c)){
+      movePiece(selected.r,selected.c,r,c);
+      selected=null; currentMoves=[];
+      draw();
+      checkGameEnd();
+      return;
+    } else {
+      selected=null; currentMoves=[];
+      draw();
+      return;
+    }
+  }
+
+  if(board[r][c] && ((turn==='w' && board[r][c].toUpperCase()===board[r][c]) || (turn==='b' && board[r][c].toLowerCase()===board[r][c]))){
+    selected={r,c};
+    currentMoves=legalMoves(r,c);
+    highlightMoves(currentMoves);
+  }
+}
+
+function highlightMoves(moves){
+  draw();
+  moves.forEach(([r,c])=>{
+    const index=(flipped?(7-r):r)*8+(flipped?(7-c):c);
+    const sq=document.getElementById('board').children[index];
+    const dot=document.createElement('div');
+    dot.className='move-dot';
+    sq.appendChild(dot);
+  });
+}
+
+function movePiece(r1,c1,r2,c2){
+  let piece=board[r1][c1];
+  if(!piece) return false;
+  history.push({board:JSON.parse(JSON.stringify(board)), turn, enPassant});
+  // handle en passant
+  if(piece.toLowerCase()==='p' && enPassant && c2===enPassant && Math.abs(r2-r1)===1 && !board[r2][c2]){
+    board[r1][c2]=null; // capture the pawn
+  }
+  // update en passant availability
+  if(piece.toLowerCase()==='p' && Math.abs(r2-r1)===2){
+    enPassant=c1;
+  } else {
+    enPassant=null;
+  }
+  board[r2][c2]=piece;
+  board[r1][c1]=null;
+  // promotion
+  if(piece==='P' && r2===0){ promotionData={r:r2,c:c2,color:'w'}; showPromotion(); }
+  else if(piece==='p' && r2===7){ promotionData={r:r2,c:c2,color:'b'}; showPromotion(); }
+  turn=(turn==='w'?'b':'w');
+  logMove(piece,r1,c1,r2,c2);
+  return true;
+}
+
+function promote(type){
+  if(!promotionData) return;
+  let {r,c,color}=promotionData;
+  board[r][c]= (color==='w'?type:type.toLowerCase());
+  promotionData=null;
+  hidePromotion();
+  draw();
+}
+
+function legalMoves(r,c){
+  let piece=board[r][c];
+  if(!piece) return [];
+  let pseudo=generateMoves(r,c);
+  return pseudo.filter(([rr,cc])=>{
+    let saved=JSON.parse(JSON.stringify(board));
+    let turnSave=turn, epSave=enPassant;
+    let p=board[r][c];
+    // en passant capture simulation
+    if(p.toLowerCase()==='p' && enPassant && cc===enPassant && Math.abs(rr-r)===1 && !board[rr][cc]){
+      board[r][cc]=null;
+    }
+    board[rr][cc]=p; board[r][c]=null;
+    turn=(turn==='w'?'b':'w');
+    let inCheck=isInCheck(turnSave);
+    board=saved; turn=turnSave; enPassant=epSave;
+    return !inCheck;
+  });
+}
+
+function generateMoves(r,c){
+  const piece=board[r][c];
+  if(!piece) return [];
+  const moves=[];
+  const isWhite=piece===piece.toUpperCase();
+  const dir=isWhite?-1:1;
+  const enemy=isWhite?x=>x===x.toLowerCase():x=>x===x.toUpperCase();
+
+  switch(piece.toLowerCase()){
+    case 'p':
+      if(board[r+dir] && !board[r+dir][c]) moves.push([r+dir,c]);
+      if((isWhite && r===6)||(!isWhite&&r===1))
+        if(!board[r+dir][c] && !board[r+2*dir][c]) moves.push([r+2*dir,c]);
+      [[dir,-1],[dir,1]].forEach(([dr,dc])=>{
+        if(board[r+dr] && board[r+dr][c+dc] && enemy(board[r+dr][c+dc])) moves.push([r+dr,c+dc]);
+      });
+      // en passant
+      if(enPassant!==null && Math.abs(c-enPassant)===1 && ((isWhite && r===3)||(!isWhite&&r===4))){
+        moves.push([r+dir,enPassant]);
+      }
+      break;
+    case 'r': lineMoves(moves,r,c,[[1,0],[-1,0],[0,1],[0,-1]],enemy); break;
+    case 'n': [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(([dr,dc])=>addIf(moves,r+dr,c+dc,enemy)); break;
+    case 'b': lineMoves(moves,r,c,[[1,1],[1,-1],[-1,1],[-1,-1]],enemy); break;
+    case 'q': lineMoves(moves,r,c,[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],enemy); break;
+    case 'k': [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc])=>addIf(moves,r+dr,c+dc,enemy)); break;
+  }
+  return moves;
+}
+
+function lineMoves(moves,r,c,dirs,enemy){
+  dirs.forEach(([dr,dc])=>{
+    let rr=r+dr, cc=c+dc;
+    while(rr>=0&&rr<8&&cc>=0&&cc<8){
+      if(!board[rr][cc]) moves.push([rr,cc]);
+      else { if(enemy(board[rr][cc])) moves.push([rr,cc]); break; }
+      rr+=dr; cc+=dc;
+    }
+  });
+}
+
+function addIf(moves,r,c,enemy){
+  if(r>=0&&r<8&&c>=0&&c<8){
+    if(!board[r][c]) moves.push([r,c]);
+    else if(enemy(board[r][c])) moves.push([r,c]);
+  }
+}
+
+function isInCheck(color){
+  let king=color==='w'?'K':'k';
+  let kr=-1,kc=-1;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(board[r][c]===king){kr=r;kc=c;}
+  if(kr===-1) return true;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    let p=board[r][c];
+    if(p && ((color==='w'&&p===p.toLowerCase())||(color==='b'&&p===p.toUpperCase()))){
+      let moves=generateMoves(r,c);
+      if(moves.some(([rr,cc])=>rr===kr&&cc===kc)) return true;
+    }
+  }
+  return false;
+}
+
+function checkGameEnd(){
+  let hasMove=false;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    let p=board[r][c];
+    if(p && ((turn==='w'&&p===p.toUpperCase())||(turn==='b'&&p===p.toLowerCase()))){
+      if(legalMoves(r,c).length>0) hasMove=true;
+    }
+  }
+  if(!hasMove){
+    if(isInCheck(turn)){
+      showPopup("Checkmate! " + (turn==='w'?"Black":"White") + " wins!");
+    } else {
+      showPopup("Stalemate!");
+    }
+  }
+}
+
+function undo(){
+  if(history.length){
+    let h=history.pop();
+    board=h.board; turn=h.turn; enPassant=h.enPassant;
+    draw();
+  }
+}
+
+function flipBoard(){ flipped=!flipped; draw(); }
+
+function logMove(piece,r1,c1,r2,c2){
+  let col='abcdefgh'; let row='87654321';
+  let move=piece+col[c1]+row[r1]+'→'+col[c2]+row[r2];
+  document.getElementById('moves').innerHTML+='<div>'+move+'</div>';
+}
+
+function showPopup(message){
+  document.getElementById("popupMessage").textContent=message;
+  document.getElementById("popup").style.display="flex";
+}
+function closePopup(){ document.getElementById("popup").style.display="none"; }
+function hidePopup(){ document.getElementById("popup").style.display="none"; }
+
+function showPromotion(){ document.getElementById("promotionPopup").style.display="flex"; }
+function hidePromotion(){ document.getElementById("promotionPopup").style.display="none"; }
+
+startGame();
+</script>
+</body>
+</html>

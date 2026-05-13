@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lumina: The Echo of Light</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            color: white;
+            z-index: 10;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            pointer-events: auto;
+        }
+        .start-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            padding: 3rem;
+        }
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(255, 255, 255, 0.2); }
+            100% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-overlay">
+        <div class="flex justify-between items-start">
+            <div class="glass p-4">
+                <p class="text-xs uppercase tracking-widest opacity-60">Luminance</p>
+                <p id="score" class="text-2xl font-light">0%</p>
+            </div>
+            <div class="glass p-4 text-right">
+                <p class="text-xs uppercase tracking-widest opacity-60">Level</p>
+                <p id="level" class="text-2xl font-light">1</p>
+            </div>
+        </div>
+
+        <div id="start-screen" class="glass start-screen">
+            <h1 class="text-4xl font-thin tracking-tighter mb-4">LUMINA</h1>
+            <p class="text-sm opacity-70 mb-8">Click and hold to create an <span class="text-cyan-300">Echo</span>. Gravity will pull you toward it. Reach the white rift to ascend.</p>
+            <button id="start-btn" class="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-cyan-100 transition-colors pointer-events-auto pulse">BEGIN ASCENSION</button>
+        </div>
+
+        <div class="flex justify-center mb-8">
+            <div id="message" class="text-sm tracking-widest uppercase opacity-0 transition-opacity duration-1000">Level Cleared</div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const messageEl = document.getElementById('message');
+
+        let width, height;
+        let gameState = 'START';
+        let level = 1;
+        let luminance = 0;
+        
+        // Physics constants
+        const FRICTION = 0.985;
+        const GRAVITY_STR = 0.4;
+        const PARTICLE_COUNT = 40;
+
+        // Game Objects
+        let player = {
+            x: 0, y: 0, 
+            vx: 0, vy: 0, 
+            radius: 8, 
+            color: '#fff',
+            tail: []
+        };
+
+        let echo = null;
+        let target = { x: 0, y: 0, radius: 30 };
+        let obstacles = [];
+        let particles = [];
+        let mouse = { x: 0, y: 0, down: false };
+
+        function init() {
+            resize();
+            resetLevel();
+            animate();
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function resetLevel() {
+            player.x = width * 0.2;
+            player.y = height / 2;
+            player.vx = 0;
+            player.vy = 0;
+            player.tail = [];
+            
+            echo = null;
+            
+            // Random target position
+            target.x = width * 0.8;
+            target.y = height * (0.2 + Math.random() * 0.6);
+            
+            // Generate obstacles based on level
+            obstacles = [];
+            const count = Math.min(3 + level, 12);
+            for(let i = 0; i < count; i++) {
+                obstacles.push({
+                    x: width * (0.3 + Math.random() * 0.4),
+                    y: height * Math.random(),
+                    radius: 20 + Math.random() * 40,
+                    pulse: Math.random() * Math.PI * 2,
+                    speed: 0.02 + Math.random() * 0.03
+                });
+            }
+            
+            luminance = 0;
+            levelEl.innerText = level;
+            scoreEl.innerText = '0%';
+        }
+
+        function spawnParticles(x, y, color, count = 10) {
+            for(let i = 0; i < count; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1.0,
+                    color: color,
+                    size: Math.random() * 3 + 1
+                });
+            }
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            // Player Physics
+            if (echo && mouse.down) {
+                const dx = echo.x - player.x;
+                const dy = echo.y - player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    player.vx += (dx / dist) * GRAVITY_STR;
+                    player.vy += (dy / dist) * GRAVITY_STR;
+                    
+                    // Spawn pull particles
+                    if(Math.random() > 0.5) {
+                        particles.push({
+                            x: player.x, y: player.y,
+                            vx: (dx/dist) * -2, vy: (dy/dist) * -2,
+                            life: 0.5, color: '#0ff', size: 1
+                        });
+                    }
+                }
+            }
+
+            player.vx *= FRICTION;
+            player.vy *= FRICTION;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Tail logic
+            player.tail.push({x: player.x, y: player.y});
+            if (player.tail.length > 20) player.tail.shift();
+
+            // Obstacle logic & Collision
+            obstacles.forEach(obs => {
+                obs.pulse += obs.speed;
+                const currentRadius = obs.radius + Math.sin(obs.pulse) * 5;
+                
+                const dx = player.x - obs.x;
+                const dy = player.y - obs.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < currentRadius + player.radius) {
+                    spawnParticles(player.x, player.y, '#ff4444', 20);
+                    resetLevel();
+                }
+            });
+
+            // Target Collision
+            const tdx = player.x - target.x;
+            const tdy = player.y - target.y;
+            const tdist = Math.sqrt(tdx * tdx + tdy * tdy);
+            
+            if (tdist < target.radius + player.radius) {
+                gameState = 'SUCCESS';
+                spawnParticles(target.x, target.y, '#fff', 50);
+                messageEl.style.opacity = 1;
+                setTimeout(() => {
+                    level++;
+                    messageEl.style.opacity = 0;
+                    resetLevel();
+                    gameState = 'PLAYING';
+                }, 1500);
+            }
+
+            // Screen boundaries
+            if (player.x < 0 || player.x > width || player.y < 0 || player.y > height) {
+                resetLevel();
+            }
+
+            // Particle update
+            particles = particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+                return p.life > 0;
+            });
+
+            // Score simulation (distance to target)
+            const totalDist = width * 0.6;
+            const currentDist = Math.max(0, totalDist - tdist);
+            luminance = Math.floor((currentDist / totalDist) * 100);
+            scoreEl.innerText = Math.min(100, Math.max(0, luminance)) + '%';
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Background Glow
+            const bgGlow = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, 400);
+            bgGlow.addColorStop(0, 'rgba(0, 50, 100, 0.1)');
+            bgGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = bgGlow;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Obstacles
+            obstacles.forEach(obs => {
+                const currentRadius = obs.radius + Math.sin(obs.pulse) * 5;
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, currentRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(20, 20, 25, 0.8)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Inner core
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, currentRadius * 0.4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 50, 50, 0.05)';
+                ctx.fill();
+            });
+
+            // Draw Target
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#fff';
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Draw Echo
+            if (echo && mouse.down) {
+                ctx.beginPath();
+                ctx.arc(echo.x, echo.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#0ff';
+                ctx.fill();
+                
+                // Tether line
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.lineTo(echo.x, echo.y);
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw Player Tail
+            if (player.tail.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(player.tail[0].x, player.tail[0].y);
+                for(let i = 1; i < player.tail.length; i++) {
+                    ctx.lineTo(player.tail[i].x, player.tail[i].y);
+                }
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw Player
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Draw Particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function animate() {
+            update();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Input Handling
+        window.addEventListener('mousedown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            mouse.down = true;
+            echo = { x: e.clientX, y: e.clientY };
+            spawnParticles(echo.x, echo.y, '#0ff', 5);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            if (mouse.down) {
+                echo.x = e.clientX;
+                echo.y = e.clientY;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            mouse.down = false;
+        });
+
+        // Touch support
+        window.addEventListener('touchstart', (e) => {
+            if (gameState !== 'PLAYING') return;
+            const t = e.touches[0];
+            mouse.down = true;
+            echo = { x: t.clientX, y: t.clientY };
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            const t = e.touches[0];
+            if (mouse.down) {
+                echo.x = t.clientX;
+                echo.y = t.clientY;
+            }
+        });
+
+        window.addEventListener('touchend', () => {
+            mouse.down = false;
+        });
+
+        startBtn.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            gameState = 'PLAYING';
+            resetLevel();
+        });
+
+        window.addEventListener('resize', resize);
+
+        // Start the engine
+        window.onload = init;
+    </script>
+</body>
+</html>
