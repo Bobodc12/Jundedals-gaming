@@ -20,8 +20,8 @@
 
         body.light-theme {
             --bg-color: #f8fafc;
-            --text-color: #ffffff;
-            --card-bg: rgba(0, 101, 158, 0.8);
+            --text-color: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.9);
             --border-color: rgba(0, 0, 0, 0.1);
             --input-bg: #ffffff;
         }
@@ -41,17 +41,18 @@
         }
 
         .game-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease-in-out;
             background: var(--card-bg);
+            border: 1px solid var(--border-color);
         }
 
         .game-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            transform: translateY(-4px);
             border-color: var(--accent-blue);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        #game-overlay {
+        #game-overlay, #legal-overlay {
             display: none;
             position: fixed;
             top: 0;
@@ -60,6 +61,13 @@
             height: 100%;
             z-index: 1000;
             background: #000;
+        }
+
+        #legal-overlay {
+            background: rgba(0,0,0,0.85);
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
         }
 
         iframe {
@@ -76,7 +84,6 @@
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #334155;
-            border-radius: 10px;
         }
         .no-scrollbar::-webkit-scrollbar {
             display: none;
@@ -90,128 +97,195 @@
             <a href="/">
                 <img src="https://www.jonkoping.se/images/18.12ea8e7716736a14f7a2026/1543307654797/logo-jkpg-vit-300px.png" alt="Logo" class="h-10 w-auto">
             </a>
-            <h1 class="text-2xl font-800 tracking-tighter">
-                Junedals gaming
-            </h1>
+            <h1 class="text-2xl font-800 tracking-tighter uppercase italic">Junedals gaming</h1>
         </div>
         <div class="flex items-center gap-4">
             <div class="relative hidden md:block">
                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="search" placeholder="Search games..." 
-                    class="border border-slate-700 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#00659E] w-64 transition-all"
+                <input type="text" id="search" placeholder="Search library..." 
+                    class="border border-slate-700 rounded-none py-2 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-[#00659E] w-64 transition-all"
                     style="background-color: var(--input-bg); color: var(--text-color);">
             </div>
-            <button onclick="toggleTheme()" class="p-2 hover:bg-slate-500/20 rounded-full transition-colors">
+            <button onclick="toggleTheme()" class="p-2 hover:bg-slate-500/20 rounded-none transition-colors">
                 <i id="theme-icon" class="fas fa-moon"></i>
             </button>
-            <button class="p-2 hover:bg-slate-500/20 rounded-full transition-colors"><i class="fas fa-cog"></i></button>
         </div>
     </nav>
 
     <main class="container mx-auto px-6 py-8">
-        <div class="mb-12 p-8 rounded-3xl bg-[#00659E] relative overflow-hidden">
+        <div class="mb-12 p-8 rounded-none bg-[#00659E] relative overflow-hidden border-l-8 border-white/20">
             <div class="relative z-10 max-w-2xl text-white">
-                <h2 class="text-4xl md:text-5xl font-extrabold mb-4">Junedals gaming: Den obonkerade hemsidan</h2>
-                <p class="text-blue-100 text-lg mb-6">Ja, jag vet att bilderna är skit. Men vem bryr sig? Spelen är peak</p>
+                <h2 class="text-4xl md:text-5xl font-extrabold mb-4 uppercase tracking-tighter">Junedals gaming: Den obonkerade hemsidan</h2>
+                <p class="text-blue-100 text-lg mb-6 font-light">Ja, jag vet att bilderna är skit. Men vem bryr sig? Spelen är peak.</p>
                 <button onclick="document.getElementById('game-grid').scrollIntoView({behavior:'smooth'})" 
-                    class="bg-white text-[#00659E] px-8 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all active:scale-95">
+                    class="bg-white text-[#00659E] px-8 py-3 rounded-none font-bold hover:bg-blue-50 transition-all uppercase tracking-widest text-sm">
                     Browse Library
                 </button>
             </div>
-            <i class="fas fa-rocket absolute -right-10 -bottom-10 text-[200px] text-white/10 -rotate-12"></i>
+            <i class="fas fa-gamepad absolute -right-10 -bottom-10 text-[200px] text-white/10 -rotate-12"></i>
         </div>
 
-        <div class="flex gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar">
-            <button class="px-6 py-2 rounded-full bg-[#00659E] text-white font-semibold whitespace-nowrap">All Games</button>
-            <button class="px-6 py-2 rounded-full glass hover:bg-slate-500/20 transition-colors whitespace-nowrap">Action</button>
-            <button class="px-6 py-2 rounded-full glass hover:bg-slate-500/20 transition-colors whitespace-nowrap">Puzzle</button>
-            <button class="px-6 py-2 rounded-full glass hover:bg-slate-500/20 transition-colors whitespace-nowrap">Sports</button>
-        </div>
+        <div id="filter-bar" class="flex gap-2 mb-8 overflow-x-auto pb-2 no-scrollbar"></div>
 
-        <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+        <div id="game-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
     </main>
 
-    <footer class="border-t border-slate-800 mt-20 py-10 text-center text-slate-500">
-        <p>© 2026 Junedals gaming, powered by github pages</p>
+    <footer class="border-t border-slate-800 mt-20 py-10 text-center text-slate-500 uppercase text-[10px] tracking-[0.3em]">
+        <p>© 2026 Junedals gaming • powered by github pages</p>
     </footer>
 
     <div id="game-overlay">
         <div class="h-[60px] glass flex items-center justify-between px-6 border-b border-white/10">
             <div class="flex items-center gap-4">
                 <button onclick="closeGame()" class="flex items-center gap-2 hover:text-[#00659E] transition-colors">
-                    <i class="fas fa-arrow-left"></i>
-                    <span class="font-semibold uppercase tracking-widest text-sm">Back to Menu</span>
+                    <i class="fas fa-times"></i>
+                    <span class="font-bold uppercase tracking-widest text-xs">Close</span>
                 </button>
                 <div class="h-6 w-[1px] bg-slate-700"></div>
-                <h3 id="current-game-title" class="font-bold text-[#00659E]">Game Title</h3>
+                <h3 id="current-game-title" class="font-bold text-[#00659E] uppercase text-sm tracking-widest">Game Title</h3>
             </div>
             <div class="flex items-center gap-4">
-                <button onclick="toggleFullscreen()" class="p-2 hover:bg-slate-500/20 rounded-lg"><i class="fas fa-expand"></i></button>
-                <button onclick="reloadGame()" class="p-2 hover:bg-slate-500/20 rounded-lg"><i class="fas fa-redo"></i></button>
+                <button id="legal-btn" class="px-3 py-1 border border-slate-500 text-slate-400 hover:text-white hover:border-white transition-all text-[10px] font-bold uppercase tracking-widest">Legal Info</button>
+                <button onclick="toggleFullscreen()" class="p-2 hover:bg-slate-500/20"><i class="fas fa-expand"></i></button>
+                <button onclick="reloadGame()" class="p-2 hover:bg-slate-500/20"><i class="fas fa-redo"></i></button>
             </div>
         </div>
         <iframe id="game-frame" src="" allowfullscreen></iframe>
     </div>
 
+    <div id="legal-overlay" onclick="this.style.display='none'">
+        <div class="glass p-8 max-w-sm w-full mx-4 rounded-none border-t-4 border-[#00659E]" onclick="event.stopPropagation()">
+            <h2 class="text-xl font-black mb-6 uppercase tracking-tighter border-b border-white/10 pb-2">Legal Info</h2>
+            <div id="legal-content" class="space-y-6"></div>
+            <button onclick="document.getElementById('legal-overlay').style.display='none'" class="mt-8 w-full py-3 bg-[#00659E] text-white font-bold uppercase tracking-widest text-xs hover:bg-blue-700 transition-colors">Return</button>
+        </div>
+    </div>
+
     <script>
         const GAME_CONFIG = [
-            { id: 'slope', name: 'Slope (funkar ej)', folder: 'slope' },
-            { id: 'neon-nexus', name: 'Neon Nexus', folder: 'neon-nexus' },
-            { id: 'lumina', name: 'Lumina', folder: 'Lumina' },
-            { id: 'roulette', name: 'Roulette', folder: 'javascript-roulette-main' },
-            { id: 'chess', name: 'Chess (player vs player)', folder: 'chess' }
+            { 
+                id: 'slope', 
+                name: 'Slope (original)', 
+                link: 'https://storage.y8.com/y8-studio/unity_webgl/Gani/slope-game_2025_v3/', 
+                folder: 'slope', 
+                tag: 'hyper-casual', 
+                status: ['Safe', 'External'] 
+            },
+            { 
+                id: 'neon-nexus', 
+                name: 'Neon Nexus', 
+                folder: 'neon-nexus', 
+                tag: 'action', 
+                status: ['Safe', 'Virus Checked'] 
+            },
+            { 
+                id: 'lumina', 
+                name: 'Lumina', 
+                folder: 'Lumina', 
+                tag: 'puzzle', 
+                status: ['Safe'] 
+            },
+            { 
+                id: 'roulette', 
+                name: 'Roulette', 
+                folder: 'javascript-roulette-main', 
+                tag: 'casino', 
+                status: ['Safe', 'Virus Checked'] 
+            },
+            { 
+                id: 'chess', 
+                name: 'Chess', 
+                folder: 'chess', 
+                tag: 'board game', 
+                status: ['Safe'] 
+            },
+            {
+                id: 'fruitninja',
+                name: 'Fruit Ninja',
+                link: 'https://www.coolmathgames.com/sites/default/files/public_games/50823/?gd_sdk_referrer_url=https%3A%2F%2Fwww.coolmathgames.com%2F0-fruit-ninja',
+                folder: 'fruitninja',
+                tag: 'action',
+                status: ['Safe', 'External']
+            },
+            {
+                id: 'polytrack',
+                name: 'Polytrack',
+                link: 'https://www.labirhin.art/comics/maumakanenghttps://orteil.dashnet.org/cookieclicker/',
+                folder: 'polytrack',
+                tag: 'racing',
+                status: ['Safe', 'External']
+            }
         ];
 
-        // Theme Toggle Logic
+        let currentFilter = 'All';
+
         function toggleTheme() {
-            const body = document.body;
+            document.body.classList.toggle('light-theme');
             const icon = document.getElementById('theme-icon');
-            body.classList.toggle('light-theme');
-            
-            if (body.classList.contains('light-theme')) {
-                icon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                icon.classList.replace('fa-sun', 'fa-moon');
-            }
+            icon.classList.toggle('fa-moon');
+            icon.classList.toggle('fa-sun');
         }
 
         const gameGrid = document.getElementById('game-grid');
+        const filterBar = document.getElementById('filter-bar');
         const searchInput = document.getElementById('search');
         const overlay = document.getElementById('game-overlay');
         const gameFrame = document.getElementById('game-frame');
         const gameTitle = document.getElementById('current-game-title');
 
         window.handleImageError = function(img) {
-            const container = img.parentElement;
-            container.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500"><i class="fas fa-image text-5xl"></i></div>`;
+            img.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-slate-800 text-slate-600"><i class="fas fa-gamepad text-4xl"></i></div>`;
         };
 
-        function renderGames(filter = '') {
+        function updateFilters() {
+            const tags = ['All', ...new Set(GAME_CONFIG.map(g => g.tag).filter(Boolean))];
+            filterBar.innerHTML = '';
+            tags.forEach(tag => {
+                const btn = document.createElement('button');
+                btn.className = `px-5 py-2 rounded-none font-bold uppercase text-[10px] tracking-widest transition-all ${currentFilter === tag ? 'bg-[#00659E] text-white' : 'glass text-slate-400 hover:text-white'}`;
+                btn.innerText = tag;
+                btn.onclick = () => {
+                    currentFilter = tag;
+                    updateFilters();
+                    renderGames(searchInput.value);
+                };
+                filterBar.appendChild(btn);
+            });
+        }
+
+        function renderGames(search = '') {
             gameGrid.innerHTML = '';
-            const filtered = GAME_CONFIG.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()));
+            const filtered = GAME_CONFIG.filter(g => {
+                const matchesSearch = g.name.toLowerCase().includes(search.toLowerCase());
+                const matchesTab = currentFilter === 'All' || g.tag === currentFilter;
+                return matchesSearch && matchesTab;
+            });
 
             filtered.forEach(game => {
-                const logoPath = `game/${game.folder}/logo.png`;
-                const typeTag = game.link ? 'External Link' : 'Unblocked';
+                // Now always checks folder first for logo, regardless of if it's a link or local game
+                const logoPath = game.folder ? `game/${game.folder}/logo.png` : 'https://via.placeholder.com/400x225?text=No+Preview';
                 
+                let statusBadges = '';
+                if (game.status) {
+                    game.status.forEach(s => {
+                        statusBadges += `<span class="text-[8px] px-1.5 py-0.5 bg-slate-500/10 border border-white/5 text-slate-500 font-bold uppercase tracking-widest">${s}</span>`;
+                    });
+                }
+
                 const card = document.createElement('div');
-                card.className = 'game-card glass rounded-3xl overflow-hidden cursor-pointer group border-2 border-transparent';
+                card.className = 'game-card rounded-none overflow-hidden cursor-pointer group';
                 card.onclick = () => openGame(game);
                 
                 card.innerHTML = `
                     <div class="aspect-video relative overflow-hidden bg-slate-900">
-                        <img src="${logoPath}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="handleImageError(this)">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div class="w-14 h-14 bg-[#00659E] rounded-full flex items-center justify-center scale-75 group-hover:scale-100 transition-transform shadow-xl">
-                                <i class="fas fa-play text-white text-xl ml-1"></i>
-                            </div>
-                        </div>
+                        <img src="${logoPath}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="handleImageError(this)">
+                        <div class="absolute inset-0 bg-[#00659E]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </div>
-                    <div class="p-6">
-                        <h4 class="font-bold text-lg truncate">${game.name}</h4>
-                        <div class="flex items-center gap-2 mt-2">
-                            <span class="text-xs px-2 py-1 bg-slate-500/20 rounded-md font-medium uppercase tracking-tighter">${typeTag}</span>
-                            <span class="text-xs px-2 py-1 bg-[#00659E]/20 text-[#00659E] rounded-md font-medium uppercase tracking-tighter">Safe</span>
+                    <div class="p-4 bg-slate-900/50">
+                        <h4 class="font-bold text-xs uppercase tracking-widest truncate text-white">${game.name}</h4>
+                        <div class="flex flex-wrap gap-1 mt-3">
+                            <span class="text-[9px] px-2 py-0.5 bg-[#00659E] text-white font-bold uppercase tracking-widest">${game.tag}</span>
+                            ${statusBadges}
                         </div>
                     </div>
                 `;
@@ -224,6 +298,44 @@
             overlay.style.display = 'block';
             gameTitle.innerText = game.name;
             gameFrame.src = game.link ? game.link : `game/${game.folder}/index.html`;
+            
+            const legalBtn = document.getElementById('legal-btn');
+            if (game.folder) {
+                legalBtn.style.display = 'block';
+                legalBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showLegal(game.folder);
+                };
+            } else {
+                legalBtn.style.display = 'none';
+            }
+        }
+
+        async function showLegal(folder) {
+            const content = document.getElementById('legal-content');
+            const legalOverlay = document.getElementById('legal-overlay');
+            
+            try {
+                const response = await fetch(`game/${folder}/legal.txt`);
+                if (!response.ok) return;
+
+                const text = await response.text();
+                const lines = text.split(/\r?\n/).map(l => l.replace(/[{}"\s]/g, '').trim());
+                
+                const creator = lines[0];
+                const license = lines[1];
+
+                let html = `<div><p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Created By</p><p class="text-sm text-white font-bold uppercase">${creator || 'Unknown'}</p></div>`;
+                
+                if (license && license.toLowerCase() !== "none") {
+                    html += `<div><p class="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">License Type</p><p class="text-xs italic text-slate-300">${license}</p></div>`;
+                }
+                
+                content.innerHTML = html;
+                legalOverlay.style.display = 'flex';
+            } catch (e) {
+                console.error("Legal info fetch failed.");
+            }
         }
 
         function closeGame() {
@@ -239,19 +351,16 @@
         }
 
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                overlay.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) overlay.requestFullscreen();
+            else document.exitFullscreen();
         }
 
         searchInput.addEventListener('input', (e) => renderGames(e.target.value));
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && overlay.style.display === 'block') closeGame();
-        });
-
-        window.onload = () => renderGames();
+        
+        window.onload = () => {
+            updateFilters();
+            renderGames();
+        };
     </script>
 </body>
 </html>
