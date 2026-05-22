@@ -116,7 +116,7 @@
         <div class="mb-12 p-8 rounded-none bg-[#00659E] relative overflow-hidden border-l-8 border-white/20">
             <div class="relative z-10 max-w-2xl text-white">
                 <h2 class="text-4xl md:text-5xl font-extrabold mb-4 uppercase tracking-tighter">Junedals gaming: Den obonkerade hemsidan</h2>
-                <p class="text-blue-100 text-lg mb-6 font-light">Ja, jag vet att bilderna är skit. Men vem bryr sig? Spelen är peak.</p>
+                <p class="text-blue-100 text-lg mb-6 font-light">Ja, jag vet att bilderna är skit. Men vem bryr sig? Spelen är peak. Btw denhär hemsidan non profit, all reklam revenue går inte till mig</p>
                 <button onclick="document.getElementById('game-grid').scrollIntoView({behavior:'smooth'})" 
                     class="bg-white text-[#00659E] px-8 py-3 rounded-none font-bold hover:bg-blue-50 transition-all uppercase tracking-widest text-sm">
                     Browse Library
@@ -168,7 +168,7 @@
                 name: 'Slope (original)', 
                 link: 'https://storage.y8.com/y8-studio/unity_webgl/Gani/slope-game_2025_v3/', 
                 folder: 'slope', 
-                tag: 'hyper-casual', 
+                tag: 'casual', 
                 status: ['Safe', 'External'] 
             },
             { 
@@ -208,12 +208,28 @@
                 status: ['Safe', 'External']
             },
             {
-                id: 'polytrack',
-                name: 'Polytrack',
-                link: 'https://www.labirhin.art/comics/maumakanenghttps://orteil.dashnet.org/cookieclicker/',
-                folder: 'polytrack',
-                tag: 'racing',
+                id: 'driftboss',
+                name: 'Drift boss',
+                link: 'https://gamecollections.me/game/owner/drift-boss-gm/',
+                folder: 'driftboss',
+                tag: 'Racing',
                 status: ['Safe', 'External']
+            },
+            {
+                id: 'ets2',
+                name: 'Euro Truck Simulator 2 real 4K',
+                link: 'https://kbhgames.com/wp-content/themes/v1/embed.php?url=https%3A%2F%2Fwww.madkidgames.com%2Ffull%2Ftruck-simulator-europe&canonical=https%3A%2F%2Fkbhgames.com%2Fgame%2Ftruck-simulator-europe&w=960&h=540&noad=1&pid=169323',
+                folder: 'ets2',
+                tag: 'Racing',
+                status: ['Safe', 'External']
+            },
+            {
+                id: 'gag',
+                name: 'Grow a farm',
+                link: 'https://growden.io/',
+                folder: 'gag',
+                tag: 'casual',
+                status: ['Safe', 'External', 'Online']
             }
         ];
 
@@ -278,7 +294,7 @@
                 
                 card.innerHTML = `
                     <div class="aspect-video relative overflow-hidden bg-slate-900">
-                        <img src="${logoPath}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="handleImageError(this)">
+                        <img src="${logoPath}" class="w-full h-full object-fill group-hover:scale-110 transition-transform duration-700" onerror="handleImageError(this)">
                         <div class="absolute inset-0 bg-[#00659E]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </div>
                     <div class="p-4 bg-slate-900/50">
